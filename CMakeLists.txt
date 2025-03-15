@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 project(
     cstruct
     VERSION 0.0.1
-    DESCRIPTION "Like the `struct` module from Python, but for C."
+    DESCRIPTION "Like the `struct` module in Python, but for C."
     LANGUAGES C)
 
 option(CSTRUCT_BUILD_TESTS "Build tests" OFF)
@@ -17,7 +17,8 @@ target_sources(cstruct PRIVATE ${cstruct_sources})
 target_include_directories(cstruct PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 if (CSTRUCT_BUILD_TESTS)
-    # ...
+    enable_testing()
+    add_subdirectory(test)
 endif ()
 
 if (CSTRUCT_BUILD_EXAMPLES)

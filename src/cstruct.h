@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stddef.h>
-#include <stdint.h>
 
 /// Return the size of a packed struct given its format string.
 /// @param[in] format The format string.
