@@ -1,6 +1,8 @@
 #include "cstruct.h"
 
+#include <stdarg.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 /// Return true if the character is a digit, and false otherwise.
 /// @param[in] c Character to check.
@@ -32,6 +34,11 @@ size_t cstruct_sizeof(const char *format)
     }
 
     size_t i = 0, total_size = 0;
+    if (format[0] == '!' || format[0] == '<' || format[0] == '>')
+    {
+        i++;
+    }
+
     while (format[i] != '\0')
     {
         int32_t multiplier = __cstruct_parse_multiplier(format, &i);

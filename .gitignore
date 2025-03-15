@@ -84,4 +84,5 @@ fp-info-cache
 .clangd
 
 # Build artifacts
-build/
+build*/
+Testing/
