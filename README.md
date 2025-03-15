@@ -103,6 +103,9 @@ A format character may be preceded by an integral repeat count. For example, the
 When packing a value `x` using one of the integer formats (`b`, `B`, `h`, `H`, `i`, `I`, `l`, `L`,
 `q`, `Q`), if `x` is outside the valid range for that format, then an error is returned.
 
+Since native padding is not supported, multipliers of `0` are not supported and will resolve to
+invalid format strings.
+
 ### Examples
 
 Example usages and/or application which make use of this library can be found in the `example`
