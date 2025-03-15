@@ -1,0 +1,30 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  configure-dev:
+    silent: true
+    status:
+      - test -d build-dev
+    cmds:
+      - cmake -S . -B build-dev -DCMAKE_BUILD_TYPE=Debug -DCSTRUCT_BUILD_TESTS=ON -DCSTRUCT_BUILD_EXAMPLES=ON
+
+  build-dev:
+    silent: true
+    cmds:
+      - task: configure-dev
+      - cmake --build build-dev
+
+  test:
+    silent: true
+    cmds:
+      - task: build-dev
+      - ctest --test-dir build-dev --output-on-failure
+
+  clean:
+    silent: true
+    cmds:
+      - rm -rf build-dev
+      - rm -rf build
+      - rm -rf Testing
