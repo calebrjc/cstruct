@@ -2,11 +2,6 @@
 
 #include <stdbool.h>
 
-/*
- * TODO(Caleb):
- * - Allow little-endian and native modes
- */
-
 /// Return true if the character is a digit, and false otherwise.
 /// @param[in] c Character to check.
 /// @return True if the character is a digit, and false otherwise.
@@ -26,6 +21,8 @@ static int32_t __cstruct_parse_multiplier(const char *format, size_t *i);
 /// @return The size of the type which the given character represents multiplied by the given
 ///         multiplier, or 0 if the character is not a valid type.
 static size_t __cstruct_calculate_size(char c, int multiplier);
+
+// Public API --------------------------------------------------------------------------------------
 
 size_t cstruct_sizeof(const char *format)
 {
@@ -56,6 +53,8 @@ size_t cstruct_sizeof(const char *format)
 
     return total_size;
 }
+
+// Private Helpers ---------------------------------------------------------------------------------
 
 static inline bool __cstruct_isdigit(char c)
 {
