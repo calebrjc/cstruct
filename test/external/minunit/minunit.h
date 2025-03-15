@@ -220,6 +220,68 @@ static void (*minunit_teardown)(void) = NULL;
 	}\
 )
 
+#define mu_assert_mem_eq(expected, result, len) MU__SAFE_BLOCK(\
+    const unsigned char* minunit_tmp_e = (const unsigned char*)(expected);\
+    const unsigned char* minunit_tmp_r = (const unsigned char*)(result);\
+    size_t minunit_len = (size_t)(len);\
+    char minunit_e_hex[MINUNIT_MESSAGE_LEN/2] = {0};\
+    char minunit_r_hex[MINUNIT_MESSAGE_LEN/2] = {0};\
+    size_t minunit_pos_e = 0;\
+    size_t minunit_pos_r = 0;\
+    size_t i;\
+    size_t line_pos;\
+    minunit_assert++;\
+    if (!minunit_tmp_e) {\
+        strcpy(minunit_e_hex, "<null pointer>");\
+    } else {\
+        for (i = 0; i < minunit_len && minunit_pos_e < sizeof(minunit_e_hex) - 20; i++) {\
+            line_pos = i % 16;\
+            if (line_pos == 0 && i > 0) {\
+                minunit_pos_e += snprintf(minunit_e_hex + minunit_pos_e,\
+                                         sizeof(minunit_e_hex) - minunit_pos_e,\
+                                         "\n\t\t");\
+            }\
+            minunit_pos_e += snprintf(minunit_e_hex + minunit_pos_e,\
+                                     sizeof(minunit_e_hex) - minunit_pos_e,\
+                                     "%02X ", minunit_tmp_e[i]);\
+        }\
+        if (i < minunit_len) {\
+            strcat(minunit_e_hex, "...");\
+        } else if (minunit_pos_e > 0) {\
+            minunit_e_hex[minunit_pos_e-1] = '\0';\
+        }\
+    }\
+    if (!minunit_tmp_r) {\
+        strcpy(minunit_r_hex, "<null pointer>");\
+    } else {\
+        for (i = 0; i < minunit_len && minunit_pos_r < sizeof(minunit_r_hex) - 20; i++) {\
+            line_pos = i % 16;\
+            if (line_pos == 0 && i > 0) {\
+                minunit_pos_r += snprintf(minunit_r_hex + minunit_pos_r,\
+                                         sizeof(minunit_r_hex) - minunit_pos_r,\
+                                         "\n\t\t");\
+            }\
+            minunit_pos_r += snprintf(minunit_r_hex + minunit_pos_r,\
+                                     sizeof(minunit_r_hex) - minunit_pos_r,\
+                                     "%02X ", minunit_tmp_r[i]);\
+        }\
+        if (i < minunit_len) {\
+            strcat(minunit_r_hex, "...");\
+        } else if (minunit_pos_r > 0) {\
+            minunit_r_hex[minunit_pos_r-1] = '\0';\
+        }\
+    }\
+    if (!minunit_tmp_e || !minunit_tmp_r || memcmp(minunit_tmp_e, minunit_tmp_r, minunit_len) != 0) {\
+        (void)snprintf(minunit_last_message, MINUNIT_MESSAGE_LEN,\
+                      "%s failed:\n\t%s:%d:\n\t\t%s\n\texpected but was\n\t\t%s",\
+                      __func__, __FILE__, __LINE__, minunit_e_hex, minunit_r_hex);\
+        minunit_status = 1;\
+        return;\
+    } else {\
+        printf(".");\
+    }\
+)
+
 /*
  * The following two functions were written by David Robert Nadeau
  * from http://NadeauSoftware.com/ and distributed under the
