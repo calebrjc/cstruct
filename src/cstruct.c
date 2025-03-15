@@ -1,4 +1,4 @@
-#include "jcsw/binpack.h"
+#include "cstruct.h"
 
 #include <stdbool.h>
 
@@ -10,16 +10,16 @@
 /// Return true if the character is a digit, and false otherwise.
 /// @param [in] c Character to check.
 /// @return True if the character is a digit, and false otherwise.
-static inline bool __binpack_isdigit(char c);
+static inline bool __cstruct_isdigit(char c);
 
 /// Return the size of the type which the given character represents.
 /// @param [in] c Character to check.
 /// @param [in] multiplier Multiplier to apply to the size.
 /// @return The size of the type which the given character represents multiplied by the given
 ///         multiplier, or 0 if the character is not a valid type.
-static size_t __binpack_calculate_size(char c, int multiplier);
+static size_t __cstruct_calculate_size(char c, int multiplier);
 
-size_t binpack_sizeof(const char *format)
+size_t cstruct_sizeof(const char *format)
 {
     if (!format)
     {
@@ -32,7 +32,7 @@ size_t binpack_sizeof(const char *format)
         bool    multiplier_set = false;
         int32_t multiplier     = 1;
 
-        while (__binpack_isdigit(format[i]))
+        while (__cstruct_isdigit(format[i]))
         {
             if (!multiplier_set)
             {
@@ -52,7 +52,7 @@ size_t binpack_sizeof(const char *format)
             return 0;
         }
 
-        size_t size = __binpack_calculate_size(format[i], multiplier);
+        size_t size = __cstruct_calculate_size(format[i], multiplier);
         if (size == 0)
         {
             return 0;
@@ -65,12 +65,12 @@ size_t binpack_sizeof(const char *format)
     return total_size;
 }
 
-static inline bool __binpack_isdigit(char c)
+static inline bool __cstruct_isdigit(char c)
 {
     return '0' <= c && c <= '9';
 }
 
-static size_t __binpack_calculate_size(char c, int multiplier)
+static size_t __cstruct_calculate_size(char c, int multiplier)
 {
     size_t base_size = 0;
 
