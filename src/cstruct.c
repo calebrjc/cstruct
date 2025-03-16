@@ -54,7 +54,7 @@
 #define __cstruct_letoh16(__x) (__cstruct_bswap16(__x))
 #define __cstruct_letoh32(__x) (__cstruct_bswap32(__x))
 #define __cstruct_letoh64(__x) (__cstruct_bswap64(__x))
-#else(__CSTRUCT_SYS_BYTE_ORDER == __CSTRUCT_SYS_BYTE_ORDER_LE)
+#else // __CSTRUCT_SYS_BYTE_ORDER == __CSTRUCT_SYS_BYTE_ORDER_LE)
 #define __cstruct_htobe16(__x) (__cstruct_bswap16(__x))
 #define __cstruct_htobe32(__x) (__cstruct_bswap32(__x))
 #define __cstruct_htobe64(__x) (__cstruct_bswap64(__x))
