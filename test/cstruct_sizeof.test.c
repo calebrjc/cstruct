@@ -1,5 +1,3 @@
-#include <stddef.h>
-
 #include "minunit.h"
 
 #include "cstruct.h"
