@@ -224,8 +224,8 @@ static void (*minunit_teardown)(void) = NULL;
     const unsigned char* minunit_tmp_e = (const unsigned char*)(expected);\
     const unsigned char* minunit_tmp_r = (const unsigned char*)(result);\
     size_t minunit_len = (size_t)(len);\
-    char minunit_e_hex[MINUNIT_MESSAGE_LEN/2] = {0};\
-    char minunit_r_hex[MINUNIT_MESSAGE_LEN/2] = {0};\
+    char minunit_e_hex[MINUNIT_MESSAGE_LEN/3] = {0};\
+    char minunit_r_hex[MINUNIT_MESSAGE_LEN/3] = {0};\
     size_t minunit_pos_e = 0;\
     size_t minunit_pos_r = 0;\
     size_t i;\

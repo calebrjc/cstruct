@@ -3,12 +3,29 @@
 version: '3'
 
 tasks:
+  default:
+    cmds:
+      - task: build
+
+  configure:
+    silent: true
+    status:
+      - test -d build
+    cmds:
+      - cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
   configure-dev:
     silent: true
     status:
       - test -d build-dev
     cmds:
       - cmake -S . -B build-dev -DCMAKE_BUILD_TYPE=Debug -DCSTRUCT_BUILD_TESTS=ON -DCSTRUCT_BUILD_EXAMPLES=ON
+
+  build:
+    silent: true
+    cmds:
+      - task: configure
+      - cmake --build build
 
   build-dev:
     silent: true
