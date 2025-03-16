@@ -34,34 +34,39 @@
 
 #if (__CSTRUCT_IS_ON_BE_ARCH)
 #define __CSTRUCT_SYS_BYTE_ORDER __CSTRUCT_SYS_BYTE_ORDER_BE
-#define __cstruct_htobe16(__x)   (__x)
-#define __cstruct_htobe32(__x)   (__x)
-#define __cstruct_htobe64(__x)   (__x)
-#define __cstruct_htole16(__x)   (__cstruct_bswap16(__x))
-#define __cstruct_htole32(__x)   (__cstruct_bswap32(__x))
-#define __cstruct_htole64(__x)   (__cstruct_bswap64(__x))
-#define __cstruct_betoh16(__x)   (__x)
-#define __cstruct_betoh32(__x)   (__x)
-#define __cstruct_betoh64(__x)   (__x)
-#define __cstruct_letoh16(__x)   (__cstruct_bswap16(__x))
-#define __cstruct_letoh32(__x)   (__cstruct_bswap32(__x))
-#define __cstruct_letoh64(__x)   (__cstruct_bswap64(__x))
 #elif (__CSTRUCT_IS_ON_LE_ARCH)
 #define __CSTRUCT_SYS_BYTE_ORDER __CSTRUCT_SYS_BYTE_ORDER_LE
-#define __cstruct_htobe16(__x)   (__cstruct_bswap16(__x))
-#define __cstruct_htobe32(__x)   (__cstruct_bswap32(__x))
-#define __cstruct_htobe64(__x)   (__cstruct_bswap64(__x))
-#define __cstruct_htole16(__x)   (__x)
-#define __cstruct_htole32(__x)   (__x)
-#define __cstruct_htole64(__x)   (__x)
-#define __cstruct_betoh16(__x)   (__cstruct_bswap16(__x))
-#define __cstruct_betoh32(__x)   (__cstruct_bswap32(__x))
-#define __cstruct_betoh64(__x)   (__cstruct_bswap64(__x))
-#define __cstruct_letoh16(__x)   (__x)
-#define __cstruct_letoh32(__x)   (__x)
-#define __cstruct_letoh64(__x)   (__x)
 #else
-#error "Unknown endianness"
+#error                                                                                             \
+    "error: Unable to detect system byte order. Please define __CSTRUCT_SYS_BYTE_ORDER as __CSTRUCT_SYS_BYTE_ORDER_BE or __CSTRUCT_SYS_BYTE_ORDER_LE."
+#endif
+
+#if (__CSTRUCT_SYS_BYTE_ORDER == __CSTRUCT_SYS_BYTE_ORDER_BE)
+#define __cstruct_htobe16(__x) (__x)
+#define __cstruct_htobe32(__x) (__x)
+#define __cstruct_htobe64(__x) (__x)
+#define __cstruct_htole16(__x) (__cstruct_bswap16(__x))
+#define __cstruct_htole32(__x) (__cstruct_bswap32(__x))
+#define __cstruct_htole64(__x) (__cstruct_bswap64(__x))
+#define __cstruct_betoh16(__x) (__x)
+#define __cstruct_betoh32(__x) (__x)
+#define __cstruct_betoh64(__x) (__x)
+#define __cstruct_letoh16(__x) (__cstruct_bswap16(__x))
+#define __cstruct_letoh32(__x) (__cstruct_bswap32(__x))
+#define __cstruct_letoh64(__x) (__cstruct_bswap64(__x))
+#else(__CSTRUCT_SYS_BYTE_ORDER == __CSTRUCT_SYS_BYTE_ORDER_LE)
+#define __cstruct_htobe16(__x) (__cstruct_bswap16(__x))
+#define __cstruct_htobe32(__x) (__cstruct_bswap32(__x))
+#define __cstruct_htobe64(__x) (__cstruct_bswap64(__x))
+#define __cstruct_htole16(__x) (__x)
+#define __cstruct_htole32(__x) (__x)
+#define __cstruct_htole64(__x) (__x)
+#define __cstruct_betoh16(__x) (__cstruct_bswap16(__x))
+#define __cstruct_betoh32(__x) (__cstruct_bswap32(__x))
+#define __cstruct_betoh64(__x) (__cstruct_bswap64(__x))
+#define __cstruct_letoh16(__x) (__x)
+#define __cstruct_letoh32(__x) (__x)
+#define __cstruct_letoh64(__x) (__x)
 #endif
 
 typedef enum
