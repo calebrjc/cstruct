@@ -8,35 +8,35 @@
 
 typedef struct
 {
-    uint16_t magic;          // Magic number to identify the protocol (0xB00B)
-    uint8_t  version;        // Protocol version
-    uint8_t  packet_type;    // Type of packet (login, update, chat, etc.)
-    uint32_t sequence_num;   // Sequence number for ordering packets
-    uint32_t timestamp;      // Timestamp when packet was sent
-    uint16_t payload_length; // Length of the payload data
-    uint8_t  flags;          // Bit flags for various options
-    uint8_t  reserved;       // Reserved for future use (padding)
-    char     session_id[16]; // Session identifier
-    float    position[3];    // Player position (x, y, z)
-    int16_t  rotation[3];    // Player rotation (pitch, yaw, roll) in degrees
-    uint8_t  health;         // Player health percentage
-    uint8_t  checksum;       // Simple checksum for header integrity
+    uint16_t magic;
+    uint8_t  version;
+    uint8_t  packet_type;
+    uint32_t sequence_num;
+    uint32_t timestamp;
+    uint16_t payload_length;
+    uint8_t  flags;
+    uint8_t  reserved;
+    char     session_id[16];
+    float    position[3];
+    int16_t  rotation[3];
+    uint8_t  health;
+    uint8_t  checksum;
 } game_packet_header_t;
 
 static const game_packet_header_t test_packet_header = {
-    .magic          = 0xB00B,                     // Magic number
-    .version        = 0x02,                       // Protocol version 2
-    .packet_type    = 0x05,                       // Packet type 5 (player update)
-    .sequence_num   = 1234567,                    // Sequence number
-    .timestamp      = 1620000000,                 // Unix timestamp (May 3, 2021)
-    .payload_length = 512,                        // 512 bytes of payload
-    .flags          = 0x0A,                       // Flags: 0x0A (encrypted | compressed)
-    .reserved       = 0x00,                       // Reserved byte (should be zero)
-    .session_id     = "ABCD1234EFGH5678",         // 16-character session ID
-    .position       = {128.5f, -42.75f, 1024.0f}, // Player position (x, y, z)
-    .rotation       = {45, 180, -30},             // Player rotation (pitch, yaw, roll)
-    .health         = 75,                         // 75% health
-    .checksum       = 0xCC                        // Checksum value
+    .magic          = 0xB00B,
+    .version        = 0x02,
+    .packet_type    = 0x05,
+    .sequence_num   = 1234567,
+    .timestamp      = 1620000000,
+    .payload_length = 512,
+    .flags          = 0x0A,
+    .reserved       = 0x00,
+    .session_id     = "ABCD1234EFGH5678",
+    .position       = {128.5f, -42.75f, 1024.0f},
+    .rotation       = {45, 180, -30},
+    .health         = 75,
+    .checksum       = 0xCC,
 };
 
 void __hexdump(uint8_t *buffer, size_t size);
