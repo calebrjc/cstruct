@@ -101,7 +101,9 @@ A format character may be preceded by an integral repeat count. For example, the
 `"4h"` means exactly the same as `"hhhh"`.
 
 When packing a value `x` using one of the integer formats (`b`, `B`, `h`, `H`, `i`, `I`, `l`, `L`,
-`q`, `Q`), if `x` is outside the valid range for that format, then an error is returned.
+`q`, `Q`), if `x` is outside the valid range for that format, the value will be truncated to the
+stated desired width via a cast to the stated desired type. In a future version, this behavior may
+be altered to return an error instead.
 
 Since native padding is not supported, multipliers of `0` are not supported and will resolve to
 invalid format strings.
