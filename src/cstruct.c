@@ -5,76 +5,6 @@
 #include <stdint.h>
 #include <string.h>
 
-// clang-format off
-#define __CSTRUCT_IS_ON_BE_ARCH                                                                    \
-    ((defined(__BYTE_ORDER) && __BYTE_ORDER == __BIG_ENDIAN)                                       \
-     || (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)                        \
-     || defined(__BIG_ENDIAN__)                                                                    \
-     || defined(__ARMEB__)                                                                         \
-     || defined(__THUMBEB__)                                                                       \
-     || defined(__AARCH64EB__)                                                                     \
-     || defined(_MIPSEB)                                                                           \
-     || defined(__MIPSEB)                                                                          \
-     || defined(__MIPSEB__))
-
-#define __CSTRUCT_IS_ON_LE_ARCH                                                                    \
-    ((defined(__BYTE_ORDER) && __BYTE_ORDER == __LITTLE_ENDIAN)                                    \
-     || (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)                     \
-     || defined(__LITTLE_ENDIAN__)                                                                 \
-     || defined(__ARMEL__)                                                                         \
-     || defined(__THUMBEL__)                                                                       \
-     || defined(__AARCH64EL__)                                                                     \
-     || defined(_MIPSEL)                                                                           \
-     || defined(__MIPSEL)                                                                          \
-     || defined(__MIPSEL__))
-// clang-format on
-
-#define __CSTRUCT_SYS_BYTE_ORDER_BE 4321
-#define __CSTRUCT_SYS_BYTE_ORDER_LE 1234
-
-#if (__CSTRUCT_IS_ON_BE_ARCH)
-#define __CSTRUCT_SYS_BYTE_ORDER __CSTRUCT_SYS_BYTE_ORDER_BE
-#elif (__CSTRUCT_IS_ON_LE_ARCH)
-#define __CSTRUCT_SYS_BYTE_ORDER __CSTRUCT_SYS_BYTE_ORDER_LE
-#else
-#error                                                                                             \
-    "error: Unable to detect system byte order. Please define __CSTRUCT_SYS_BYTE_ORDER as __CSTRUCT_SYS_BYTE_ORDER_BE or __CSTRUCT_SYS_BYTE_ORDER_LE."
-#endif
-
-#if (__CSTRUCT_SYS_BYTE_ORDER == __CSTRUCT_SYS_BYTE_ORDER_BE)
-#define __cstruct_htobe16(__x) (__x)
-#define __cstruct_htobe32(__x) (__x)
-#define __cstruct_htobe64(__x) (__x)
-#define __cstruct_htole16(__x) (__cstruct_bswap16(__x))
-#define __cstruct_htole32(__x) (__cstruct_bswap32(__x))
-#define __cstruct_htole64(__x) (__cstruct_bswap64(__x))
-#define __cstruct_betoh16(__x) (__x)
-#define __cstruct_betoh32(__x) (__x)
-#define __cstruct_betoh64(__x) (__x)
-#define __cstruct_letoh16(__x) (__cstruct_bswap16(__x))
-#define __cstruct_letoh32(__x) (__cstruct_bswap32(__x))
-#define __cstruct_letoh64(__x) (__cstruct_bswap64(__x))
-#else // __CSTRUCT_SYS_BYTE_ORDER == __CSTRUCT_SYS_BYTE_ORDER_LE)
-#define __cstruct_htobe16(__x) (__cstruct_bswap16(__x))
-#define __cstruct_htobe32(__x) (__cstruct_bswap32(__x))
-#define __cstruct_htobe64(__x) (__cstruct_bswap64(__x))
-#define __cstruct_htole16(__x) (__x)
-#define __cstruct_htole32(__x) (__x)
-#define __cstruct_htole64(__x) (__x)
-#define __cstruct_betoh16(__x) (__cstruct_bswap16(__x))
-#define __cstruct_betoh32(__x) (__cstruct_bswap32(__x))
-#define __cstruct_betoh64(__x) (__cstruct_bswap64(__x))
-#define __cstruct_letoh16(__x) (__x)
-#define __cstruct_letoh32(__x) (__x)
-#define __cstruct_letoh64(__x) (__x)
-#endif
-
-typedef enum
-{
-    __CSTRUCT_BYTE_ORDER_BE = 0,
-    __CSTRUCT_BYTE_ORDER_LE = 1,
-} __cstruct_byte_order_e;
-
 /// Return true if the character is a digit, and false otherwise.
 /// @param[in] c Character to check.
 /// @return True if the character is a digit, and false otherwise.
@@ -95,9 +25,29 @@ static int32_t __cstruct_parse_multiplier(const char *format, size_t *i);
 ///         multiplier, or 0 if the character is not a valid type.
 static size_t __cstruct_calculate_size(char c, int multiplier);
 
-static inline uint16_t __cstruct_bswap16(uint16_t x);
-static inline uint32_t __cstruct_bswap32(uint32_t x);
-static inline uint64_t __cstruct_bswap64(uint64_t x);
+// Packing/Unpacking Functions ---------------------------------------------------------------------
+
+typedef uint16_t (*__cstruct_pack16_f)(uint16_t x);
+typedef uint16_t (*__cstruct_unpack16_f)(uint16_t x);
+typedef uint32_t (*__cstruct_pack32_f)(uint32_t x);
+typedef uint32_t (*__cstruct_unpack32_f)(uint32_t x);
+typedef uint64_t (*__cstruct_pack64_f)(uint64_t x);
+typedef uint64_t (*__cstruct_unpack64_f)(uint64_t x);
+
+static inline uint16_t __cstruct_pack_be16(uint16_t x);
+static inline uint16_t __cstruct_unpack_be16(uint16_t x);
+static inline uint16_t __cstruct_pack_le16(uint16_t x);
+static inline uint16_t __cstruct_unpack_le16(uint16_t x);
+
+static inline uint32_t __cstruct_pack_be32(uint32_t x);
+static inline uint32_t __cstruct_unpack_be32(uint32_t x);
+static inline uint32_t __cstruct_pack_le32(uint32_t x);
+static inline uint32_t __cstruct_unpack_le32(uint32_t x);
+
+static inline uint64_t __cstruct_pack_be64(uint64_t x);
+static inline uint64_t __cstruct_unpack_be64(uint64_t x);
+static inline uint64_t __cstruct_pack_le64(uint64_t x);
+static inline uint64_t __cstruct_unpack_le64(uint64_t x);
 
 // Public API --------------------------------------------------------------------------------------
 
@@ -108,17 +58,24 @@ ssize_t cstruct_pack(const char *format, void *buffer, size_t buffer_size, ...)
         return -1;
     }
 
-    __cstruct_byte_order_e byte_order = __CSTRUCT_BYTE_ORDER_BE;
-    size_t                 i          = 0;
-    size_t                 total_size = 0;
-    va_list                args;
+    size_t  i          = 0;
+    ssize_t total_size = 0;
+    va_list args;
 
-    // NOTE(Caleb): Assume big endian unless otherwise specified
+    // NOTE(Caleb):
+    // - Selece packing functions here to avoid unnecessary branching in the packing loop
+    // - Assume big endian unless otherwise specified
+    __cstruct_pack16_f pack16 = __cstruct_pack_be16;
+    __cstruct_pack32_f pack32 = __cstruct_pack_be32;
+    __cstruct_pack64_f pack64 = __cstruct_pack_be64;
+
     if (format[0] == '!' || format[0] == '<' || format[0] == '>')
     {
         if (format[0] == '<')
         {
-            byte_order = __CSTRUCT_BYTE_ORDER_LE;
+            pack16 = __cstruct_pack_le16;
+            pack32 = __cstruct_pack_le32;
+            pack64 = __cstruct_pack_le64;
         }
 
         i++;
@@ -185,8 +142,7 @@ ssize_t cstruct_pack(const char *format, void *buffer, size_t buffer_size, ...)
                     case 'H':
                     {
                         uint16_t x = (uint16_t)va_arg(args, int);
-                        x          = (byte_order == __CSTRUCT_BYTE_ORDER_LE) ? __cstruct_htole16(x)
-                                                                             : __cstruct_htobe16(x);
+                        x          = pack16(x);
 
                         memcpy(dest + j, &x, 2);
 
@@ -199,8 +155,7 @@ ssize_t cstruct_pack(const char *format, void *buffer, size_t buffer_size, ...)
                     case 'L':
                     {
                         uint32_t x = (uint32_t)va_arg(args, int);
-                        x          = (byte_order == __CSTRUCT_BYTE_ORDER_LE) ? __cstruct_htole32(x)
-                                                                             : __cstruct_htobe32(x);
+                        x          = pack32(x);
 
                         memcpy(dest + j, &x, 4);
 
@@ -211,8 +166,7 @@ ssize_t cstruct_pack(const char *format, void *buffer, size_t buffer_size, ...)
                     case 'Q':
                     {
                         uint64_t x = (uint64_t)va_arg(args, uint64_t);
-                        x          = (byte_order == __CSTRUCT_BYTE_ORDER_LE) ? __cstruct_htole64(x)
-                                                                             : __cstruct_htobe64(x);
+                        x          = pack64(x);
 
                         memcpy(dest + j, &x, 8);
 
@@ -228,8 +182,7 @@ ssize_t cstruct_pack(const char *format, void *buffer, size_t buffer_size, ...)
                         } u;
 
                         u.f = (float)va_arg(args, double);
-                        u.i = (byte_order == __CSTRUCT_BYTE_ORDER_LE) ? __cstruct_htole32(u.i)
-                                                                      : __cstruct_htobe32(u.i);
+                        u.i = pack32(u.i);
 
                         memcpy(dest + j, &u.i, 4);
 
@@ -245,8 +198,7 @@ ssize_t cstruct_pack(const char *format, void *buffer, size_t buffer_size, ...)
                         } u;
 
                         u.d = (double)va_arg(args, double);
-                        u.i = (byte_order == __CSTRUCT_BYTE_ORDER_LE) ? __cstruct_htole64(u.i)
-                                                                      : __cstruct_htobe64(u.i);
+                        u.i = pack64(u.i);
 
                         memcpy(dest + j, &u.i, 8);
 
@@ -275,17 +227,24 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
         return 0;
     }
 
-    __cstruct_byte_order_e byte_order = __CSTRUCT_BYTE_ORDER_BE;
-    size_t                 i          = 0;
-    size_t                 bytes_read = 0;
-    va_list                args;
+    size_t  i          = 0;
+    ssize_t bytes_read = 0;
+    va_list args;
 
-    // NOTE(Caleb): Assume big endian unless otherwise specified
+    // NOTE(Caleb):
+    // - Selece unpacking functions here to avoid unnecessary branching in the unpacking loop
+    // - Assume big endian unless otherwise specified
+    __cstruct_unpack16_f unpack16 = __cstruct_unpack_be16;
+    __cstruct_unpack32_f unpack32 = __cstruct_unpack_be32;
+    __cstruct_unpack64_f unpack64 = __cstruct_unpack_be64;
+
     if (format[0] == '!' || format[0] == '<' || format[0] == '>')
     {
         if (format[0] == '<')
         {
-            byte_order = __CSTRUCT_BYTE_ORDER_LE;
+            unpack16 = __cstruct_unpack_le16;
+            unpack32 = __cstruct_unpack_le32;
+            unpack64 = __cstruct_unpack_le64;
         }
 
         i++;
@@ -352,8 +311,7 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
                     case 'H':
                     {
                         uint16_t x = *((uint16_t *)(buffer + bytes_read + j));
-                        x          = (byte_order == __CSTRUCT_BYTE_ORDER_LE) ? __cstruct_letoh16(x)
-                                                                             : __cstruct_betoh16(x);
+                        x          = unpack16(x);
 
                         uint16_t *dest = va_arg(args, uint16_t *);
                         *dest          = x;
@@ -367,8 +325,7 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
                     case 'L':
                     {
                         uint32_t x = *((uint32_t *)(buffer + bytes_read + j));
-                        x          = (byte_order == __CSTRUCT_BYTE_ORDER_LE) ? __cstruct_letoh32(x)
-                                                                             : __cstruct_betoh32(x);
+                        x          = unpack32(x);
 
                         uint32_t *dest = va_arg(args, uint32_t *);
                         *dest          = x;
@@ -380,8 +337,7 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
                     case 'Q':
                     {
                         uint64_t x = *((uint64_t *)(buffer + bytes_read + j));
-                        x          = (byte_order == __CSTRUCT_BYTE_ORDER_LE) ? __cstruct_letoh64(x)
-                                                                             : __cstruct_betoh64(x);
+                        x          = unpack64(x);
 
                         uint64_t *dest = va_arg(args, uint64_t *);
                         *dest          = x;
@@ -398,8 +354,7 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
                         } u;
 
                         u.f = *((float *)(buffer + bytes_read + j));
-                        u.i = (byte_order == __CSTRUCT_BYTE_ORDER_LE) ? __cstruct_letoh32(u.i)
-                                                                      : __cstruct_betoh32(u.i);
+                        u.i = unpack32(u.i);
 
                         float *dest = va_arg(args, float *);
                         *dest       = u.f;
@@ -416,8 +371,7 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
                         } u;
 
                         u.d = *((double *)(buffer + bytes_read + j));
-                        u.i = (byte_order == __CSTRUCT_BYTE_ORDER_LE) ? __cstruct_letoh64(u.i)
-                                                                      : __cstruct_betoh64(u.i);
+                        u.i = unpack64(u.i);
 
                         double *dest = va_arg(args, double *);
                         *dest        = u.d;
@@ -446,8 +400,8 @@ size_t cstruct_sizeof(const char *format)
         return 0;
     }
 
-    size_t i          = 0;
-    size_t total_size = 0;
+    size_t  i          = 0;
+    ssize_t total_size = 0;
 
     // NOTE(Caleb): Skip over the byte order specifier
     if (format[0] == '!' || format[0] == '<' || format[0] == '>')
@@ -553,21 +507,114 @@ static size_t __cstruct_calculate_size(char c, int multiplier)
     return size * multiplier;
 }
 
-static inline uint16_t __cstruct_bswap16(uint16_t x)
+static inline uint16_t __cstruct_pack_be16(uint16_t x)
 {
-    return (uint16_t)(((x >> 8) & 0xFF) | ((x & 0xFF) << 8));
+    uint8_t o_data[2] = {(uint8_t)(x >> 8), (uint8_t)(x & 0xFF)};
+
+    return *(uint16_t *)o_data;
 }
 
-static inline uint32_t __cstruct_bswap32(uint32_t x)
+static inline uint16_t __cstruct_unpack_be16(uint16_t x)
 {
-    return ((x & 0xFF000000U) >> 24) | ((x & 0x00FF0000U) >> 8) | ((x & 0x0000FF00U) << 8)
-         | ((x & 0x000000FFU) << 24);
+    uint8_t *data = (uint8_t *)&x;
+    return ((uint16_t)data[0] << 8) | data[1];
 }
 
-static inline uint64_t __cstruct_bswap64(uint64_t x)
+static inline uint16_t __cstruct_pack_le16(uint16_t x)
 {
-    return ((x & 0xFF00000000000000ULL) >> 56) | ((x & 0x00FF000000000000ULL) >> 40)
-         | ((x & 0x0000FF0000000000ULL) >> 24) | ((x & 0x000000FF00000000ULL) >> 8)
-         | ((x & 0x00000000FF000000ULL) << 8) | ((x & 0x0000000000FF0000ULL) << 24)
-         | ((x & 0x000000000000FF00ULL) << 40) | ((x & 0x00000000000000FFULL) << 56);
+    uint8_t o_data[2] = {(uint8_t)(x & 0xFF), (uint8_t)(x >> 8)};
+
+    return *(uint16_t *)o_data;
+}
+
+static inline uint16_t __cstruct_unpack_le16(uint16_t x)
+{
+    uint8_t *data = (uint8_t *)&x;
+    return ((uint16_t)data[1] << 8) | data[0];
+}
+
+static inline uint32_t __cstruct_pack_be32(uint32_t x)
+{
+    uint8_t o_data[4] = {
+        (uint8_t)(x >> 24),
+        (uint8_t)((x >> 16) & 0xFF),
+        (uint8_t)((x >> 8) & 0xFF),
+        (uint8_t)(x & 0xFF),
+    };
+
+    return *(uint32_t *)o_data;
+}
+
+static inline uint32_t __cstruct_unpack_be32(uint32_t x)
+{
+    uint8_t *data = (uint8_t *)&x;
+    return ((uint32_t)data[0] << 24) | ((uint32_t)data[1] << 16) | ((uint32_t)data[2] << 8)
+         | data[3];
+}
+
+static inline uint32_t __cstruct_pack_le32(uint32_t x)
+{
+    uint8_t o_data[4] = {
+        (uint8_t)(x & 0xFF),
+        (uint8_t)((x >> 8) & 0xFF),
+        (uint8_t)((x >> 16) & 0xFF),
+        (uint8_t)(x >> 24),
+    };
+
+    return *(uint32_t *)o_data;
+}
+
+static inline uint32_t __cstruct_unpack_le32(uint32_t x)
+{
+    uint8_t *data = (uint8_t *)&x;
+    return ((uint32_t)data[3] << 24) | ((uint32_t)data[2] << 16) | ((uint32_t)data[1] << 8)
+         | data[0];
+}
+
+static inline uint64_t __cstruct_pack_be64(uint64_t x)
+{
+    uint8_t o_data[8] = {
+        (uint8_t)(x >> 56),
+        (uint8_t)((x >> 48) & 0xFF),
+        (uint8_t)((x >> 40) & 0xFF),
+        (uint8_t)((x >> 32) & 0xFF),
+        (uint8_t)((x >> 24) & 0xFF),
+        (uint8_t)((x >> 16) & 0xFF),
+        (uint8_t)((x >> 8) & 0xFF),
+        (uint8_t)(x & 0xFF),
+    };
+
+    return *(uint64_t *)o_data;
+}
+
+static inline uint64_t __cstruct_unpack_be64(uint64_t x)
+{
+    uint8_t *data = (uint8_t *)&x;
+    return ((uint64_t)data[0] << 56) | ((uint64_t)data[1] << 48) | ((uint64_t)data[2] << 40)
+         | ((uint64_t)data[3] << 32) | ((uint64_t)data[4] << 24) | ((uint64_t)data[5] << 16)
+         | ((uint64_t)data[6] << 8) | data[7];
+}
+
+static inline uint64_t __cstruct_pack_le64(uint64_t x)
+{
+    uint8_t o_data[8] = {
+        (uint8_t)(x & 0xFF),
+        (uint8_t)((x >> 8) & 0xFF),
+        (uint8_t)((x >> 16) & 0xFF),
+        (uint8_t)((x >> 24) & 0xFF),
+        (uint8_t)((x >> 32) & 0xFF),
+        (uint8_t)((x >> 40) & 0xFF),
+        (uint8_t)((x >> 48) & 0xFF),
+        (uint8_t)(x >> 56),
+    };
+
+    return *(uint64_t *)o_data;
+}
+
+static inline uint64_t __cstruct_unpack_le64(uint64_t x)
+{
+    uint8_t *data = (uint8_t *)&x;
+    return ((uint64_t)data[7] << 56) | ((uint64_t)data[6] << 48) | ((uint64_t)data[5] << 40)
+         | ((uint64_t)data[4] << 32) | ((uint64_t)data[3] << 24) | ((uint64_t)data[2] << 16)
+         | ((uint64_t)data[1] << 8) | data[0];
 }
