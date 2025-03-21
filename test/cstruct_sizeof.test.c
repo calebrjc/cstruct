@@ -64,15 +64,15 @@ MU_TEST(test_combined_with_byte_order)
 
 MU_TEST(test_error_cases)
 {
-    mu_assert_int_eq(0, cstruct_sizeof(""));            // Empty string
-    mu_assert_int_eq(0, cstruct_sizeof("z"));           // Invalid format character
-    mu_assert_int_eq(0, cstruct_sizeof("0h"));          // Zero multiplier
-    mu_assert_int_eq(0, cstruct_sizeof("h<"));          // Byte order not at beginning
-    mu_assert_int_eq(0, cstruct_sizeof("<>h"));         // Multiple byte order specifiers
-    mu_assert_int_eq(0, cstruct_sizeof("<<h"));         // Repeated byte order specifier
-    mu_assert_int_eq(0, cstruct_sizeof("h<i"));         // Byte order in middle
-    mu_assert_int_eq(0, cstruct_sizeof("4294967296h")); // Multiplier overflow
-    mu_assert_int_eq(0, cstruct_sizeof("@h"));          // Invalid byte order specifier
+    mu_assert_int_eq(-1, cstruct_sizeof(""));            // Empty string
+    mu_assert_int_eq(-1, cstruct_sizeof("z"));           // Invalid format character
+    mu_assert_int_eq(-1, cstruct_sizeof("0h"));          // Zero multiplier
+    mu_assert_int_eq(-1, cstruct_sizeof("h<"));          // Byte order not at beginning
+    mu_assert_int_eq(-1, cstruct_sizeof("<>h"));         // Multiple byte order specifiers
+    mu_assert_int_eq(-1, cstruct_sizeof("<<h"));         // Repeated byte order specifier
+    mu_assert_int_eq(-1, cstruct_sizeof("h<i"));         // Byte order in middle
+    mu_assert_int_eq(-1, cstruct_sizeof("4294967296h")); // Multiplier overflow
+    mu_assert_int_eq(-1, cstruct_sizeof("@h"));          // Invalid byte order specifier
 }
 
 MU_TEST(test_edge_cases)
