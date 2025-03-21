@@ -33,6 +33,10 @@ typedef uint32_t (*__cstruct_pack32_f)(uint32_t x);
 typedef uint32_t (*__cstruct_unpack32_f)(uint32_t x);
 typedef uint64_t (*__cstruct_pack64_f)(uint64_t x);
 typedef uint64_t (*__cstruct_unpack64_f)(uint64_t x);
+typedef uint32_t (*__cstruct_pack_float_f)(float x);
+typedef float (*__cstruct_unpack_float_f)(uint32_t x);
+typedef uint32_t (*__cstruct_pack_double_f)(double x);
+typedef double (*__cstruct_unpack_double_f)(uint32_t x);
 
 static inline uint16_t __cstruct_pack_be16(uint16_t x);
 static inline uint16_t __cstruct_pack_le16(uint16_t x);
@@ -49,6 +53,16 @@ static inline uint64_t __cstruct_pack_le64(uint64_t x);
 static inline uint64_t __cstruct_unpack_be64(uint64_t x);
 static inline uint64_t __cstruct_unpack_le64(uint64_t x);
 
+static inline uint32_t __cstruct_pack_float_be(float x);
+static inline uint32_t __cstruct_pack_float_le(float x);
+static inline float    __cstruct_unpack_float_be(uint32_t x);
+static inline float    __cstruct_unpack_float_le(uint32_t x);
+
+static inline uint32_t __cstruct_pack_double_be(double x);
+static inline uint32_t __cstruct_pack_double_le(double x);
+static inline double   __cstruct_unpack_double_be(uint32_t x);
+static inline double   __cstruct_unpack_double_le(uint32_t x);
+
 // Public API --------------------------------------------------------------------------------------
 
 ssize_t cstruct_pack(const char *format, void *buffer, size_t buffer_size, ...)
@@ -63,19 +77,23 @@ ssize_t cstruct_pack(const char *format, void *buffer, size_t buffer_size, ...)
     va_list args;
 
     // NOTE(Caleb):
-    // - Selece packing functions here to avoid unnecessary branching in the packing loop
+    // - Select packing functions here to avoid unnecessary branching in the packing loop
     // - Assume big endian unless otherwise specified
-    __cstruct_pack16_f pack16 = __cstruct_pack_be16;
-    __cstruct_pack32_f pack32 = __cstruct_pack_be32;
-    __cstruct_pack64_f pack64 = __cstruct_pack_be64;
+    __cstruct_pack16_f      pack16      = __cstruct_pack_be16;
+    __cstruct_pack32_f      pack32      = __cstruct_pack_be32;
+    __cstruct_pack64_f      pack64      = __cstruct_pack_be64;
+    __cstruct_pack_float_f  pack_float  = __cstruct_pack_float_be;
+    __cstruct_pack_double_f pack_double = __cstruct_pack_double_be;
 
     if (format[0] == '!' || format[0] == '<' || format[0] == '>')
     {
         if (format[0] == '<')
         {
-            pack16 = __cstruct_pack_le16;
-            pack32 = __cstruct_pack_le32;
-            pack64 = __cstruct_pack_le64;
+            pack16      = __cstruct_pack_le16;
+            pack32      = __cstruct_pack_le32;
+            pack64      = __cstruct_pack_le64;
+            pack_float  = __cstruct_pack_float_le;
+            pack_double = __cstruct_pack_double_le;
         }
 
         i++;
@@ -176,32 +194,20 @@ ssize_t cstruct_pack(const char *format, void *buffer, size_t buffer_size, ...)
 
                     case 'f':
                     {
-                        union
-                        {
-                            float    f;
-                            uint32_t i;
-                        } u;
+                        float    f = (float)va_arg(args, double);
+                        uint32_t u = pack_float(f);
 
-                        u.f = (float)va_arg(args, double);
-                        u.i = pack32(u.i);
-
-                        memcpy(dest + j, &u.i, 4);
+                        memcpy(dest + j, &u, 4);
 
                         break;
                     }
 
                     case 'd':
                     {
-                        union
-                        {
-                            double   d;
-                            uint64_t i;
-                        } u;
+                        double   d = (double)va_arg(args, double);
+                        uint64_t u = pack_double(d);
 
-                        u.d = (double)va_arg(args, double);
-                        u.i = pack64(u.i);
-
-                        memcpy(dest + j, &u.i, 8);
+                        memcpy(dest + j, &u, 8);
 
                         break;
                     }
@@ -233,19 +239,23 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
     va_list args;
 
     // NOTE(Caleb):
-    // - Selece unpacking functions here to avoid unnecessary branching in the unpacking loop
+    // - Select unpacking functions here to avoid unnecessary branching in the unpacking loop
     // - Assume big endian unless otherwise specified
-    __cstruct_unpack16_f unpack16 = __cstruct_unpack_be16;
-    __cstruct_unpack32_f unpack32 = __cstruct_unpack_be32;
-    __cstruct_unpack64_f unpack64 = __cstruct_unpack_be64;
+    __cstruct_unpack16_f      unpack16      = __cstruct_unpack_be16;
+    __cstruct_unpack32_f      unpack32      = __cstruct_unpack_be32;
+    __cstruct_unpack64_f      unpack64      = __cstruct_unpack_be64;
+    __cstruct_unpack_float_f  unpack_float  = __cstruct_unpack_float_be;
+    __cstruct_unpack_double_f unpack_double = __cstruct_unpack_double_be;
 
     if (format[0] == '!' || format[0] == '<' || format[0] == '>')
     {
         if (format[0] == '<')
         {
-            unpack16 = __cstruct_unpack_le16;
-            unpack32 = __cstruct_unpack_le32;
-            unpack64 = __cstruct_unpack_le64;
+            unpack16      = __cstruct_unpack_le16;
+            unpack32      = __cstruct_unpack_le32;
+            unpack64      = __cstruct_unpack_le64;
+            unpack_float  = __cstruct_unpack_float_le;
+            unpack_double = __cstruct_unpack_double_le;
         }
 
         i++;
@@ -314,11 +324,11 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
                     case 'h':
                     case 'H':
                     {
-                        uint16_t x = *(uint16_t *)(src + j);
-                        x          = unpack16(x);
+                        uint16_t x = 0;
+                        memcpy(&x, src + j, 2);
 
                         uint16_t *dest = va_arg(args, uint16_t *);
-                        *dest          = x;
+                        *dest          = unpack16(x);
 
                         break;
                     }
@@ -328,11 +338,11 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
                     case 'l':
                     case 'L':
                     {
-                        uint32_t x = *(uint32_t *)(src + j);
-                        x          = unpack32(x);
+                        uint32_t x = 0;
+                        memcpy(&x, src + j, 4);
 
                         uint32_t *dest = va_arg(args, uint32_t *);
-                        *dest          = x;
+                        *dest          = unpack32(x);
 
                         break;
                     }
@@ -340,45 +350,33 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
                     case 'q':
                     case 'Q':
                     {
-                        uint64_t x = *(uint64_t *)(src + j);
-                        x          = unpack64(x);
+                        uint64_t x = 0;
+                        memcpy(&x, src + j, 8);
 
                         uint64_t *dest = va_arg(args, uint64_t *);
-                        *dest          = x;
+                        *dest          = unpack64(x);
 
                         break;
                     }
 
                     case 'f':
                     {
-                        union
-                        {
-                            float    f;
-                            uint32_t i;
-                        } u;
-
-                        u.f = *(float *)(src + j);
-                        u.i = unpack32(u.i);
+                        uint32_t x = 0;
+                        memcpy(&x, src + j, 4);
 
                         float *dest = va_arg(args, float *);
-                        *dest       = u.f;
+                        *dest       = unpack_float(x);
 
                         break;
                     }
 
                     case 'd':
                     {
-                        union
-                        {
-                            double   d;
-                            uint64_t i;
-                        } u;
-
-                        u.d = *(double *)(src + j);
-                        u.i = unpack64(u.i);
+                        uint64_t x = 0;
+                        memcpy(&x, src + j, 8);
 
                         double *dest = va_arg(args, double *);
-                        *dest        = u.d;
+                        *dest        = unpack_double(x);
 
                         break;
                     }
@@ -513,16 +511,22 @@ static ssize_t __cstruct_calculate_size(char c, int multiplier)
 
 static inline uint16_t __cstruct_pack_be16(uint16_t x)
 {
-    uint8_t o_data[2] = {(uint8_t)(x >> 8), (uint8_t)(x & 0xFF)};
+    uint8_t data[2] = {(uint8_t)(x >> 8), (uint8_t)(x & 0xFF)};
 
-    return *(uint16_t *)o_data;
+    uint16_t result = 0;
+    memcpy(&result, data, 2);
+
+    return result;
 }
 
 static inline uint16_t __cstruct_pack_le16(uint16_t x)
 {
-    uint8_t o_data[2] = {(uint8_t)(x & 0xFF), (uint8_t)(x >> 8)};
+    uint8_t data[2] = {(uint8_t)(x & 0xFF), (uint8_t)(x >> 8)};
 
-    return *(uint16_t *)o_data;
+    uint16_t result = 0;
+    memcpy(&result, data, 2);
+
+    return result;
 }
 
 static inline uint16_t __cstruct_unpack_be16(uint16_t x)
@@ -539,26 +543,32 @@ static inline uint16_t __cstruct_unpack_le16(uint16_t x)
 
 static inline uint32_t __cstruct_pack_be32(uint32_t x)
 {
-    uint8_t o_data[4] = {
+    uint8_t data[4] = {
         (uint8_t)(x >> 24),
         (uint8_t)((x >> 16) & 0xFF),
         (uint8_t)((x >> 8) & 0xFF),
         (uint8_t)(x & 0xFF),
     };
 
-    return *(uint32_t *)o_data;
+    uint32_t result = 0;
+    memcpy(&result, data, 4);
+
+    return result;
 }
 
 static inline uint32_t __cstruct_pack_le32(uint32_t x)
 {
-    uint8_t o_data[4] = {
+    uint8_t data[4] = {
         (uint8_t)(x & 0xFF),
         (uint8_t)((x >> 8) & 0xFF),
         (uint8_t)((x >> 16) & 0xFF),
         (uint8_t)(x >> 24),
     };
 
-    return *(uint32_t *)o_data;
+    uint32_t result = 0;
+    memcpy(&result, data, 4);
+
+    return result;
 }
 
 static inline uint32_t __cstruct_unpack_be32(uint32_t x)
@@ -577,7 +587,7 @@ static inline uint32_t __cstruct_unpack_le32(uint32_t x)
 
 static inline uint64_t __cstruct_pack_be64(uint64_t x)
 {
-    uint8_t o_data[8] = {
+    uint8_t data[8] = {
         (uint8_t)(x >> 56),
         (uint8_t)((x >> 48) & 0xFF),
         (uint8_t)((x >> 40) & 0xFF),
@@ -588,12 +598,15 @@ static inline uint64_t __cstruct_pack_be64(uint64_t x)
         (uint8_t)(x & 0xFF),
     };
 
-    return *(uint64_t *)o_data;
+    uint64_t result = 0;
+    memcpy(&result, data, 8);
+
+    return result;
 }
 
 static inline uint64_t __cstruct_pack_le64(uint64_t x)
 {
-    uint8_t o_data[8] = {
+    uint8_t data[8] = {
         (uint8_t)(x & 0xFF),
         (uint8_t)((x >> 8) & 0xFF),
         (uint8_t)((x >> 16) & 0xFF),
@@ -604,7 +617,10 @@ static inline uint64_t __cstruct_pack_le64(uint64_t x)
         (uint8_t)(x >> 56),
     };
 
-    return *(uint64_t *)o_data;
+    uint64_t result = 0;
+    memcpy(&result, data, 8);
+
+    return result;
 }
 
 static inline uint64_t __cstruct_unpack_be64(uint64_t x)
@@ -621,4 +637,72 @@ static inline uint64_t __cstruct_unpack_le64(uint64_t x)
     return ((uint64_t)data[7] << 56) | ((uint64_t)data[6] << 48) | ((uint64_t)data[5] << 40)
          | ((uint64_t)data[4] << 32) | ((uint64_t)data[3] << 24) | ((uint64_t)data[2] << 16)
          | ((uint64_t)data[1] << 8) | data[0];
+}
+
+static inline uint32_t __cstruct_pack_float_be(float x)
+{
+    uint32_t y = 0;
+    memcpy(&y, &x, sizeof(float));
+
+    return __cstruct_pack_be32(y);
+}
+
+static inline uint32_t __cstruct_pack_float_le(float x)
+{
+    uint32_t y = 0;
+    memcpy(&y, &x, sizeof(float));
+
+    return __cstruct_pack_le32(y);
+}
+
+static inline float __cstruct_unpack_float_be(uint32_t x)
+{
+    float    y = 0;
+    uint32_t z = __cstruct_unpack_be32(x);
+    memcpy(&y, &z, sizeof(float));
+
+    return y;
+}
+
+static inline float __cstruct_unpack_float_le(uint32_t x)
+{
+    float    y = 0;
+    uint32_t z = __cstruct_unpack_le32(x);
+    memcpy(&y, &z, sizeof(float));
+
+    return y;
+}
+
+static inline uint32_t __cstruct_pack_double_be(double x)
+{
+    uint64_t y = 0;
+    memcpy(&y, &x, sizeof(double));
+
+    return __cstruct_pack_be64(y);
+}
+
+static inline uint32_t __cstruct_pack_double_le(double x)
+{
+    uint64_t y = 0;
+    memcpy(&y, &x, sizeof(double));
+
+    return __cstruct_pack_le64(y);
+}
+
+static inline double __cstruct_unpack_double_be(uint32_t x)
+{
+    double   y = 0;
+    uint64_t z = __cstruct_unpack_be64(x);
+    memcpy(&y, &z, sizeof(double));
+
+    return y;
+}
+
+static inline double __cstruct_unpack_double_le(uint32_t x)
+{
+    double   y = 0;
+    uint64_t z = __cstruct_unpack_le64(x);
+    memcpy(&y, &z, sizeof(double));
+
+    return y;
 }
