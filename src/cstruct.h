@@ -21,5 +21,5 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
 
 /// Return the size of a packed struct given its format string.
 /// @param[in] format The format string.
-/// @return The size of the packed struct, or zero if the format string is invalid.
-size_t cstruct_sizeof(const char *format);
+/// @return The size of the packed struct, or -1 if the format string is invalid.
+ssize_t cstruct_sizeof(const char *format);

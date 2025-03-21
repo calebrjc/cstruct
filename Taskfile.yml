@@ -19,7 +19,7 @@ tasks:
     status:
       - test -d build-dev
     cmds:
-      - cmake -S . -B build-dev -DCMAKE_BUILD_TYPE=Debug -DCSTRUCT_BUILD_TESTS=ON -DCSTRUCT_BUILD_EXAMPLES=ON
+      - cmake -S . -B build-dev -DCMAKE_BUILD_TYPE=Debug -DCSTRUCT_DEV=ON
 
   build:
     silent: true
