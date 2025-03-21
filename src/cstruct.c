@@ -22,8 +22,8 @@ static int32_t __cstruct_parse_multiplier(const char *format, size_t *i);
 /// @param[in] c Character to check.
 /// @param[in] multiplier Multiplier to apply to the size.
 /// @return The size of the type which the given character represents multiplied by the given
-///         multiplier, or 0 if the character is not a valid type.
-static size_t __cstruct_calculate_size(char c, int multiplier);
+///         multiplier, or -1 if the character is not a valid type.
+static ssize_t __cstruct_calculate_size(char c, int multiplier);
 
 // Packing/Unpacking Functions ---------------------------------------------------------------------
 
@@ -35,18 +35,18 @@ typedef uint64_t (*__cstruct_pack64_f)(uint64_t x);
 typedef uint64_t (*__cstruct_unpack64_f)(uint64_t x);
 
 static inline uint16_t __cstruct_pack_be16(uint16_t x);
-static inline uint16_t __cstruct_unpack_be16(uint16_t x);
 static inline uint16_t __cstruct_pack_le16(uint16_t x);
+static inline uint16_t __cstruct_unpack_be16(uint16_t x);
 static inline uint16_t __cstruct_unpack_le16(uint16_t x);
 
 static inline uint32_t __cstruct_pack_be32(uint32_t x);
-static inline uint32_t __cstruct_unpack_be32(uint32_t x);
 static inline uint32_t __cstruct_pack_le32(uint32_t x);
+static inline uint32_t __cstruct_unpack_be32(uint32_t x);
 static inline uint32_t __cstruct_unpack_le32(uint32_t x);
 
 static inline uint64_t __cstruct_pack_be64(uint64_t x);
-static inline uint64_t __cstruct_unpack_be64(uint64_t x);
 static inline uint64_t __cstruct_pack_le64(uint64_t x);
+static inline uint64_t __cstruct_unpack_be64(uint64_t x);
 static inline uint64_t __cstruct_unpack_le64(uint64_t x);
 
 // Public API --------------------------------------------------------------------------------------
@@ -109,6 +109,7 @@ ssize_t cstruct_pack(const char *format, void *buffer, size_t buffer_size, ...)
         }
 
         uint8_t *dest = (uint8_t *)buffer + total_size;
+
         if (format_char == 'x')
         {
             memset(dest, 0, size);
@@ -224,7 +225,7 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
 {
     if (!format || *format == '\0')
     {
-        return 0;
+        return -1;
     }
 
     size_t  i          = 0;
@@ -263,14 +264,15 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
 
         char format_char = format[i];
 
-        size_t size = __cstruct_calculate_size(format_char, multiplier);
-        if (size == 0)
+        ssize_t size = __cstruct_calculate_size(format_char, multiplier);
+        if (size <= 0)
         {
-            return 0;
+            va_end(args);
+            return -1;
         }
 
         // NOTE(Caleb): Ensure that we don't read past the end of the buffer
-        if (bytes_read + size > buffer_size)
+        if ((size_t)(bytes_read + size) > buffer_size)
         {
             va_end(args);
             return -1;
@@ -284,14 +286,16 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
             continue;
         }
 
+        uint8_t *src = (uint8_t *)buffer + bytes_read;
+
         if (format_char == 's')
         {
             void *dest = va_arg(args, void *);
-            memcpy(dest, buffer + bytes_read, size);
+            memcpy(dest, src, size);
         }
         else
         {
-            for (size_t j = 0; j < size; j += size / multiplier)
+            for (ssize_t j = 0; j < size; j += size / multiplier)
             {
                 switch (format_char)
                 {
@@ -299,7 +303,7 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
                     case 'b':
                     case 'B':
                     {
-                        uint8_t x = *((uint8_t *)(buffer + bytes_read + j));
+                        uint8_t x = *(src + j);
 
                         uint8_t *dest = va_arg(args, uint8_t *);
                         *dest         = x;
@@ -310,7 +314,7 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
                     case 'h':
                     case 'H':
                     {
-                        uint16_t x = *((uint16_t *)(buffer + bytes_read + j));
+                        uint16_t x = *(uint16_t *)(src + j);
                         x          = unpack16(x);
 
                         uint16_t *dest = va_arg(args, uint16_t *);
@@ -324,7 +328,7 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
                     case 'l':
                     case 'L':
                     {
-                        uint32_t x = *((uint32_t *)(buffer + bytes_read + j));
+                        uint32_t x = *(uint32_t *)(src + j);
                         x          = unpack32(x);
 
                         uint32_t *dest = va_arg(args, uint32_t *);
@@ -336,7 +340,7 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
                     case 'q':
                     case 'Q':
                     {
-                        uint64_t x = *((uint64_t *)(buffer + bytes_read + j));
+                        uint64_t x = *(uint64_t *)(src + j);
                         x          = unpack64(x);
 
                         uint64_t *dest = va_arg(args, uint64_t *);
@@ -353,7 +357,7 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
                             uint32_t i;
                         } u;
 
-                        u.f = *((float *)(buffer + bytes_read + j));
+                        u.f = *(float *)(src + j);
                         u.i = unpack32(u.i);
 
                         float *dest = va_arg(args, float *);
@@ -370,7 +374,7 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
                             uint64_t i;
                         } u;
 
-                        u.d = *((double *)(buffer + bytes_read + j));
+                        u.d = *(double *)(src + j);
                         u.i = unpack64(u.i);
 
                         double *dest = va_arg(args, double *);
@@ -393,11 +397,11 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
     return bytes_read;
 }
 
-size_t cstruct_sizeof(const char *format)
+ssize_t cstruct_sizeof(const char *format)
 {
     if (!format || *format == '\0')
     {
-        return 0;
+        return -1;
     }
 
     size_t  i          = 0;
@@ -414,14 +418,14 @@ size_t cstruct_sizeof(const char *format)
         int32_t multiplier = __cstruct_parse_multiplier(format, &i);
         if (multiplier <= 0)
         {
-            return 0;
+            return -1;
         }
 
         // NOTE(Caleb): At this point, format[i] is the next format character
-        size_t size = __cstruct_calculate_size(format[i], multiplier);
-        if (size == 0)
+        ssize_t size = __cstruct_calculate_size(format[i], multiplier);
+        if (size <= 0)
         {
-            return 0;
+            return -1;
         }
 
         total_size += size;
@@ -468,9 +472,9 @@ static int32_t __cstruct_parse_multiplier(const char *format, size_t *i)
     return multiplier;
 }
 
-static size_t __cstruct_calculate_size(char c, int multiplier)
+static ssize_t __cstruct_calculate_size(char c, int multiplier)
 {
-    size_t size = 0;
+    ssize_t size = 0;
 
     switch (c)
     {
@@ -501,7 +505,7 @@ static size_t __cstruct_calculate_size(char c, int multiplier)
             break;
 
         default:
-            return 0;
+            return -1;
     }
 
     return size * multiplier;
@@ -514,17 +518,17 @@ static inline uint16_t __cstruct_pack_be16(uint16_t x)
     return *(uint16_t *)o_data;
 }
 
-static inline uint16_t __cstruct_unpack_be16(uint16_t x)
-{
-    uint8_t *data = (uint8_t *)&x;
-    return ((uint16_t)data[0] << 8) | data[1];
-}
-
 static inline uint16_t __cstruct_pack_le16(uint16_t x)
 {
     uint8_t o_data[2] = {(uint8_t)(x & 0xFF), (uint8_t)(x >> 8)};
 
     return *(uint16_t *)o_data;
+}
+
+static inline uint16_t __cstruct_unpack_be16(uint16_t x)
+{
+    uint8_t *data = (uint8_t *)&x;
+    return ((uint16_t)data[0] << 8) | data[1];
 }
 
 static inline uint16_t __cstruct_unpack_le16(uint16_t x)
@@ -545,13 +549,6 @@ static inline uint32_t __cstruct_pack_be32(uint32_t x)
     return *(uint32_t *)o_data;
 }
 
-static inline uint32_t __cstruct_unpack_be32(uint32_t x)
-{
-    uint8_t *data = (uint8_t *)&x;
-    return ((uint32_t)data[0] << 24) | ((uint32_t)data[1] << 16) | ((uint32_t)data[2] << 8)
-         | data[3];
-}
-
 static inline uint32_t __cstruct_pack_le32(uint32_t x)
 {
     uint8_t o_data[4] = {
@@ -562,6 +559,13 @@ static inline uint32_t __cstruct_pack_le32(uint32_t x)
     };
 
     return *(uint32_t *)o_data;
+}
+
+static inline uint32_t __cstruct_unpack_be32(uint32_t x)
+{
+    uint8_t *data = (uint8_t *)&x;
+    return ((uint32_t)data[0] << 24) | ((uint32_t)data[1] << 16) | ((uint32_t)data[2] << 8)
+         | data[3];
 }
 
 static inline uint32_t __cstruct_unpack_le32(uint32_t x)
@@ -587,14 +591,6 @@ static inline uint64_t __cstruct_pack_be64(uint64_t x)
     return *(uint64_t *)o_data;
 }
 
-static inline uint64_t __cstruct_unpack_be64(uint64_t x)
-{
-    uint8_t *data = (uint8_t *)&x;
-    return ((uint64_t)data[0] << 56) | ((uint64_t)data[1] << 48) | ((uint64_t)data[2] << 40)
-         | ((uint64_t)data[3] << 32) | ((uint64_t)data[4] << 24) | ((uint64_t)data[5] << 16)
-         | ((uint64_t)data[6] << 8) | data[7];
-}
-
 static inline uint64_t __cstruct_pack_le64(uint64_t x)
 {
     uint8_t o_data[8] = {
@@ -609,6 +605,14 @@ static inline uint64_t __cstruct_pack_le64(uint64_t x)
     };
 
     return *(uint64_t *)o_data;
+}
+
+static inline uint64_t __cstruct_unpack_be64(uint64_t x)
+{
+    uint8_t *data = (uint8_t *)&x;
+    return ((uint64_t)data[0] << 56) | ((uint64_t)data[1] << 48) | ((uint64_t)data[2] << 40)
+         | ((uint64_t)data[3] << 32) | ((uint64_t)data[4] << 24) | ((uint64_t)data[5] << 16)
+         | ((uint64_t)data[6] << 8) | data[7];
 }
 
 static inline uint64_t __cstruct_unpack_le64(uint64_t x)
