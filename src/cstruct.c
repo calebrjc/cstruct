@@ -35,8 +35,8 @@ typedef uint64_t (*__cstruct_pack64_f)(uint64_t x);
 typedef uint64_t (*__cstruct_unpack64_f)(uint64_t x);
 typedef uint32_t (*__cstruct_pack_float_f)(float x);
 typedef float (*__cstruct_unpack_float_f)(uint32_t x);
-typedef uint32_t (*__cstruct_pack_double_f)(double x);
-typedef double (*__cstruct_unpack_double_f)(uint32_t x);
+typedef uint64_t (*__cstruct_pack_double_f)(double x);
+typedef double (*__cstruct_unpack_double_f)(uint64_t x);
 
 static inline uint16_t __cstruct_pack_be16(uint16_t x);
 static inline uint16_t __cstruct_pack_le16(uint16_t x);
@@ -58,10 +58,10 @@ static inline uint32_t __cstruct_pack_float_le(float x);
 static inline float    __cstruct_unpack_float_be(uint32_t x);
 static inline float    __cstruct_unpack_float_le(uint32_t x);
 
-static inline uint32_t __cstruct_pack_double_be(double x);
-static inline uint32_t __cstruct_pack_double_le(double x);
-static inline double   __cstruct_unpack_double_be(uint32_t x);
-static inline double   __cstruct_unpack_double_le(uint32_t x);
+static inline uint64_t __cstruct_pack_double_be(double x);
+static inline uint64_t __cstruct_pack_double_le(double x);
+static inline double   __cstruct_unpack_double_be(uint64_t x);
+static inline double   __cstruct_unpack_double_le(uint64_t x);
 
 // Public API --------------------------------------------------------------------------------------
 
@@ -673,7 +673,7 @@ static inline float __cstruct_unpack_float_le(uint32_t x)
     return y;
 }
 
-static inline uint32_t __cstruct_pack_double_be(double x)
+static inline uint64_t __cstruct_pack_double_be(double x)
 {
     uint64_t y = 0;
     memcpy(&y, &x, sizeof(double));
@@ -681,7 +681,7 @@ static inline uint32_t __cstruct_pack_double_be(double x)
     return __cstruct_pack_be64(y);
 }
 
-static inline uint32_t __cstruct_pack_double_le(double x)
+static inline uint64_t __cstruct_pack_double_le(double x)
 {
     uint64_t y = 0;
     memcpy(&y, &x, sizeof(double));
@@ -689,7 +689,7 @@ static inline uint32_t __cstruct_pack_double_le(double x)
     return __cstruct_pack_le64(y);
 }
 
-static inline double __cstruct_unpack_double_be(uint32_t x)
+static inline double __cstruct_unpack_double_be(uint64_t x)
 {
     double   y = 0;
     uint64_t z = __cstruct_unpack_be64(x);
@@ -698,7 +698,7 @@ static inline double __cstruct_unpack_double_be(uint32_t x)
     return y;
 }
 
-static inline double __cstruct_unpack_double_le(uint32_t x)
+static inline double __cstruct_unpack_double_le(uint64_t x)
 {
     double   y = 0;
     uint64_t z = __cstruct_unpack_le64(x);
