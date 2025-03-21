@@ -49,7 +49,35 @@ static inline uint64_t __cstruct_pack_le64(uint64_t x);
 static inline uint64_t __cstruct_unpack_be64(uint64_t x);
 static inline uint64_t __cstruct_unpack_le64(uint64_t x);
 
-// Public API --------------------------------------------------------------------------------------
+/**
+ * @brief Serializes values into a buffer according to a format string.
+ *
+ * This function packs the provided values into the given buffer following the layout
+ * defined by the format string. The format string may begin with a byte-order specifier
+ * ('<' for little-endian, '!' or '>' for big-endian, with big-endian as the default), and
+ * supports optional multipliers for repeating data fields.
+ *
+ * Supported format characters include:
+ * - 'b'/'B': 8-bit integers.
+ * - 'h'/'H': 16-bit integers.
+ * - 'i'/'I', 'l'/'L': 32-bit integers.
+ * - 'q'/'Q': 64-bit integers.
+ * - 'f': 32-bit floating-point values.
+ * - 'd': 64-bit double-precision values.
+ * - 's': Strings, with unused bytes set to zero.
+ * - 'x': Padding bytes (zero-filled).
+ *
+ * The function iteratively processes the format string and packs each value into the buffer
+ * using the appropriate conversion based on type and endianness. If an invalid format, insufficient
+ * buffer space, or invalid multiplier is encountered, the function aborts and returns -1.
+ *
+ * @param format The format string specifying the layout and types for serialization.
+ * @param buffer The destination buffer where the packed data will be stored.
+ * @param buffer_size The size of the destination buffer in bytes.
+ * @param ... A variable list of values that correspond to the format specifiers.
+ *
+ * @return ssize_t The total number of bytes packed into the buffer on success, or -1 on error.
+ */
 
 ssize_t cstruct_pack(const char *format, void *buffer, size_t buffer_size, ...)
 {
@@ -221,6 +249,29 @@ ssize_t cstruct_pack(const char *format, void *buffer, size_t buffer_size, ...)
     return total_size;
 }
 
+/**
+ * @brief Unpacks serialized data from a buffer according to a format string.
+ *
+ * This function reads data sequentially from a given buffer and stores the unpacked values into
+ * variables provided as additional arguments. The format string specifies the layout, endianness,
+ * and data types of the serialized data. An optional initial endianness specifier ('!', '<', '>') in
+ * the format string sets the byte order (default is big-endian), and numeric type specifiers (such as
+ * 'b', 'h', 'i', 'q', 'f', 'd') determine how subsequent bytes are processed. A multiplier may precede
+ * a type to indicate multiple consecutive elements, while a specifier of 'x' skips (pads) bytes.
+ *
+ * The function returns the total number of bytes read from the buffer. If an error occurs due to an
+ * empty or invalid format string, an invalid multiplier, an unrecognized type specifier, or an attempt
+ * to read beyond the buffer size, the function returns -1.
+ *
+ * @param format Format string defining the data layout. May start with an endianness indicator followed
+ *               by type characters, optionally preceded by multipliers.
+ * @param buffer Pointer to the source buffer containing serialized data.
+ * @param buffer_size Total size of the source buffer in bytes.
+ *
+ * @return ssize_t Total number of bytes read from the buffer on success, or -1 if an error occurs.
+ *
+ * @note The variable arguments must be pointers that match the expected data types derived from the format string.
+ */
 ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_size, ...)
 {
     if (!format || *format == '\0')
@@ -397,6 +448,17 @@ ssize_t cstruct_unpack(const char *format, const void *buffer, size_t buffer_siz
     return bytes_read;
 }
 
+/**
+ * @brief Computes the total size in bytes of a data structure based on a format string.
+ *
+ * The function iterates over the format string—optionally skipping an initial byte order specifier
+ * ('!', '<', or '>')—and calculates the cumulative size by processing each format character along
+ * with its associated multiplier. It returns the total size in bytes, or -1 if the format string is
+ * NULL, empty, contains an invalid multiplier, or references an unrecognized type.
+ *
+ * @param format A null-terminated string that specifies the structure layout.
+ * @return ssize_t Total size in bytes on success, or -1 on error.
+ */
 ssize_t cstruct_sizeof(const char *format)
 {
     if (!format || *format == '\0')
@@ -442,6 +504,22 @@ static inline bool __cstruct_isdigit(char c)
     return '0' <= c && c <= '9';
 }
 
+/**
+ * @brief Parses a numeric multiplier from a format string.
+ *
+ * This function reads consecutive digit characters from the given format string starting at
+ * the index pointed to by *i, converts them into a positive integer multiplier, and advances
+ * the index past the digits. If the character at the initial index is not a digit, it returns a
+ * default multiplier of 1. In the case where the resulting multiplier is not positive (e.g., due
+ * to an overflow), the function returns -1.
+ *
+ * @note Assumes that the format string is non-NULL and non-empty and that the index pointer is valid.
+ *
+ * @param format The format string containing the multiplier.
+ * @param i Pointer to the current index in the format string; updated to point to the first character
+ *          after the multiplier digits.
+ * @return int32_t The parsed multiplier, 1 if no digits are found, or -1 if the multiplier is invalid.
+ */
 static int32_t __cstruct_parse_multiplier(const char *format, size_t *i)
 {
     // NOTE(Caleb):
@@ -472,6 +550,20 @@ static int32_t __cstruct_parse_multiplier(const char *format, size_t *i)
     return multiplier;
 }
 
+/**
+ * @brief Computes the total byte size for a specified format type.
+ *
+ * This function determines the base size in bytes associated with a given format character and scales that
+ * size by the provided multiplier. Supported format characters are:
+ * - 'x', 'b', 'B', 's': 1 byte.
+ * - 'h', 'H': 2 bytes.
+ * - 'i', 'I', 'l', 'L', 'f': 4 bytes.
+ * - 'q', 'Q', 'd': 8 bytes.
+ *
+ * @param c The format character representing the data type.
+ * @param multiplier The factor by which the base size is multiplied.
+ * @return ssize_t The total size in bytes (base size multiplied by multiplier), or -1 if the format character is invalid.
+ */
 static ssize_t __cstruct_calculate_size(char c, int multiplier)
 {
     ssize_t size = 0;
@@ -511,6 +603,16 @@ static ssize_t __cstruct_calculate_size(char c, int multiplier)
     return size * multiplier;
 }
 
+/**
+ * @brief Converts a 16-bit integer to its big-endian representation.
+ *
+ * Reorders the bytes of the provided 16-bit integer so that the most significant byte comes first,
+ * ensuring the value is represented in big-endian format. This is useful for network transmission or
+ * file storage where big-endian ordering is required.
+ *
+ * @param x The 16-bit integer to be converted.
+ * @return uint16_t The big-endian representation of the input value.
+ */
 static inline uint16_t __cstruct_pack_be16(uint16_t x)
 {
     uint8_t o_data[2] = {(uint8_t)(x >> 8), (uint8_t)(x & 0xFF)};
@@ -518,6 +620,15 @@ static inline uint16_t __cstruct_pack_be16(uint16_t x)
     return *(uint16_t *)o_data;
 }
 
+/**
+ * @brief Converts a 16-bit integer to its little-endian representation.
+ *
+ * This inline function rearranges the bytes of the input integer so that the lower-order byte
+ * is placed first, resulting in a little-endian formatted value.
+ *
+ * @param x The 16-bit integer to convert.
+ * @return uint16_t The little-endian representation of the input integer.
+ */
 static inline uint16_t __cstruct_pack_le16(uint16_t x)
 {
     uint8_t o_data[2] = {(uint8_t)(x & 0xFF), (uint8_t)(x >> 8)};
@@ -525,18 +636,46 @@ static inline uint16_t __cstruct_pack_le16(uint16_t x)
     return *(uint16_t *)o_data;
 }
 
+/**
+ * @brief Converts a 16-bit integer from big-endian byte order to host order.
+ *
+ * This inline function reassembles a 16-bit integer from its big-endian
+ * byte representation by shifting the first byte by 8 bits and combining it
+ * with the second byte.
+ *
+ * @param x A 16-bit integer with big-endian byte ordering.
+ * @return uint16_t The value converted to host byte order.
+ */
 static inline uint16_t __cstruct_unpack_be16(uint16_t x)
 {
     uint8_t *data = (uint8_t *)&x;
     return ((uint16_t)data[0] << 8) | data[1];
 }
 
+/**
+ * @brief Unpacks a 16-bit integer from its little-endian representation.
+ *
+ * This function converts a 16-bit integer stored in little-endian byte order
+ * to the host's native byte order by reordering its bytes.
+ *
+ * @param x The 16-bit value in little-endian format.
+ * @return The corresponding 16-bit value in host byte order.
+ */
 static inline uint16_t __cstruct_unpack_le16(uint16_t x)
 {
     uint8_t *data = (uint8_t *)&x;
     return ((uint16_t)data[1] << 8) | data[0];
 }
 
+/**
+ * @brief Packs a 32-bit unsigned integer into big-endian format.
+ *
+ * This function converts the provided 32-bit integer into a big-endian
+ * representation by rearranging its bytes and returning the resulting value.
+ *
+ * @param x The 32-bit unsigned integer to be packed.
+ * @return A 32-bit unsigned integer with its bytes ordered in big-endian format.
+ */
 static inline uint32_t __cstruct_pack_be32(uint32_t x)
 {
     uint8_t o_data[4] = {
@@ -549,6 +688,16 @@ static inline uint32_t __cstruct_pack_be32(uint32_t x)
     return *(uint32_t *)o_data;
 }
 
+/**
+ * @brief Packs a 32-bit unsigned integer into little-endian byte order.
+ *
+ * This inline function reorders the bytes of a 32-bit unsigned integer so that the
+ * least significant byte is stored at the lowest address, producing a little-endian
+ * representation of the input value.
+ *
+ * @param x The 32-bit unsigned integer to be converted.
+ * @return uint32_t The input integer represented in little-endian format.
+ */
 static inline uint32_t __cstruct_pack_le32(uint32_t x)
 {
     uint8_t o_data[4] = {
@@ -561,6 +710,15 @@ static inline uint32_t __cstruct_pack_le32(uint32_t x)
     return *(uint32_t *)o_data;
 }
 
+/**
+ * @brief Converts a 32-bit big-endian integer to host byte order.
+ *
+ * This function interprets the provided 32-bit integer as a sequence of four bytes stored in big-endian order
+ * and reconstructs it into a native 32-bit integer using bitwise operations.
+ *
+ * @param x The 32-bit integer whose bytes are in big-endian order.
+ * @return The 32-bit integer converted to host byte order.
+ */
 static inline uint32_t __cstruct_unpack_be32(uint32_t x)
 {
     uint8_t *data = (uint8_t *)&x;
@@ -568,6 +726,15 @@ static inline uint32_t __cstruct_unpack_be32(uint32_t x)
          | data[3];
 }
 
+/**
+ * @brief Converts a 32-bit integer from little-endian byte order to host order.
+ *
+ * This function reorders the bytes of a 32-bit integer provided in little-endian format,
+ * returning the correctly ordered value for the host system.
+ *
+ * @param x The 32-bit integer in little-endian byte order.
+ * @return The 32-bit integer converted to host byte order.
+ */
 static inline uint32_t __cstruct_unpack_le32(uint32_t x)
 {
     uint8_t *data = (uint8_t *)&x;
@@ -575,6 +742,14 @@ static inline uint32_t __cstruct_unpack_le32(uint32_t x)
          | data[0];
 }
 
+/**
+ * @brief Converts a 64-bit unsigned integer to big-endian format.
+ *
+ * This function reorders the bytes of the provided integer to represent it in big-endian (network byte order).
+ *
+ * @param x A 64-bit unsigned integer in host byte order.
+ * @return The integer represented in big-endian format.
+ */
 static inline uint64_t __cstruct_pack_be64(uint64_t x)
 {
     uint8_t o_data[8] = {
@@ -591,6 +766,15 @@ static inline uint64_t __cstruct_pack_be64(uint64_t x)
     return *(uint64_t *)o_data;
 }
 
+/**
+ * @brief Packs a 64-bit integer into its little-endian representation.
+ *
+ * This function converts the input 64-bit integer into little-endian byte order by
+ * manually assembling its bytes, ensuring the least significant byte is stored first.
+ *
+ * @param x The 64-bit integer to be packed.
+ * @return uint64_t The little-endian representation of the input integer.
+ */
 static inline uint64_t __cstruct_pack_le64(uint64_t x)
 {
     uint8_t o_data[8] = {
@@ -607,6 +791,15 @@ static inline uint64_t __cstruct_pack_le64(uint64_t x)
     return *(uint64_t *)o_data;
 }
 
+/**
+ * @brief Converts a 64-bit integer from big-endian to host byte order.
+ *
+ * This inline function treats the input as a sequence of eight bytes in big-endian order
+ * and recombines them into a 64-bit integer in the native host byte order.
+ *
+ * @param x A 64-bit integer represented in big-endian format.
+ * @return uint64_t The 64-bit integer converted to host byte order.
+ */
 static inline uint64_t __cstruct_unpack_be64(uint64_t x)
 {
     uint8_t *data = (uint8_t *)&x;
@@ -615,6 +808,15 @@ static inline uint64_t __cstruct_unpack_be64(uint64_t x)
          | ((uint64_t)data[6] << 8) | data[7];
 }
 
+/**
+ * @brief Converts a 64-bit integer from little-endian to host byte order.
+ *
+ * This function reorders the bytes of the provided 64-bit value, which is assumed
+ * to be stored in little-endian format, so that it is represented correctly on the host machine.
+ *
+ * @param x 64-bit integer in little-endian format.
+ * @return uint64_t The 64-bit integer in host byte order.
+ */
 static inline uint64_t __cstruct_unpack_le64(uint64_t x)
 {
     uint8_t *data = (uint8_t *)&x;
